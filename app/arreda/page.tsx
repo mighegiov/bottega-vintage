@@ -1,11 +1,14 @@
 "use client";
 import { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+
 export default function ArredaPage() {
   const [foto, setFoto] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingImmagine, setLoadingImmagine] = useState(false);
   const [risposta, setRisposta] = useState("");
+  const [immagineGenerata, setImmagineGenerata] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -19,16 +22,19 @@ export default function ArredaPage() {
   const handleGenera = async () => {
     if (!prompt) return;
     setLoading(true);
+    setLoadingImmagine(true);
     setRisposta("");
+    setImmagineGenerata(null);
 
+    // 1. Suggerimenti testuali con Claude
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-  "Content-Type": "application/json",
-  "x-api-key": process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || "",
-  "anthropic-version": "2023-06-01",
-  "anthropic-dangerous-direct-browser-access": "true",
-},
+        "Content-Type": "application/json",
+        "x-api-key": process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || "",
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
         max_tokens: 1000,
@@ -65,6 +71,27 @@ export default function ArredaPage() {
     const testo = data.content?.[0]?.text || "Nessuna risposta ricevuta.";
     setRisposta(testo);
     setLoading(false);
+
+    // 2. Generazione immagine con Replicate
+    try {
+      const imgResponse = await fetch("/api/genera-immagine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: prompt,
+          imageBase64: foto || null,
+        }),
+      });
+
+      const imgData = await imgResponse.json();
+      if (imgData.imageUrl) {
+        setImmagineGenerata(imgData.imageUrl);
+      }
+    } catch (err) {
+      console.error("Errore generazione immagine:", err);
+    }
+
+    setLoadingImmagine(false);
   };
 
   return (
@@ -76,7 +103,7 @@ export default function ArredaPage() {
         padding: "6rem 2rem 4rem",
       }}
     >
-      {/* Nav minimalista */}
+      {/* Nav */}
       <nav
         style={{
           position: "fixed",
@@ -173,31 +200,11 @@ export default function ArredaPage() {
             />
           ) : (
             <div>
-              <p
-                style={{
-                  fontSize: "2rem",
-                  marginBottom: "0.75rem",
-                  opacity: 0.4,
-                }}
-              >
-                📷
-              </p>
-              <p
-                style={{
-                  fontSize: "0.85rem",
-                  color: "#8B5A2B",
-                  letterSpacing: "0.05em",
-                }}
-              >
+              <p style={{ fontSize: "2rem", marginBottom: "0.75rem", opacity: 0.4 }}>📷</p>
+              <p style={{ fontSize: "0.85rem", color: "#8B5A2B", letterSpacing: "0.05em" }}>
                 Carica una foto della tua stanza
               </p>
-              <p
-                style={{
-                  fontSize: "0.75rem",
-                  color: "rgba(92,61,30,0.5)",
-                  marginTop: "0.4rem",
-                }}
-              >
+              <p style={{ fontSize: "0.75rem", color: "rgba(92,61,30,0.5)", marginTop: "0.4rem" }}>
                 (opzionale — puoi procedere anche senza)
               </p>
             </div>
@@ -267,7 +274,7 @@ export default function ArredaPage() {
         {/* Bottone */}
         <button
           onClick={handleGenera}
-          disabled={loading || !prompt}
+          disabled={loading || loadingImmagine || !prompt}
           style={{
             width: "100%",
             padding: "1.1rem",
@@ -282,10 +289,66 @@ export default function ArredaPage() {
             marginBottom: "2rem",
           }}
         >
-          {loading ? "L'AI sta elaborando..." : "Genera suggerimenti"}
+          {loading || loadingImmagine ? "L'AI sta elaborando..." : "Genera rendering"}
         </button>
 
-        {/* Risposta AI */}
+        {/* Immagine generata */}
+        {(loadingImmagine || immagineGenerata) && (
+          <div style={{ marginBottom: "2rem" }}>
+            <p
+              style={{
+                fontSize: "0.7rem",
+                letterSpacing: "0.3em",
+                textTransform: "uppercase",
+                color: "#8B5A2B",
+                marginBottom: "1rem",
+              }}
+            >
+              Rendering generato
+            </p>
+            {loadingImmagine && !immagineGenerata ? (
+              <div
+                style={{
+                  height: "300px",
+                  background: "#2C1A0E",
+                  borderRadius: "2px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "column",
+                  gap: "1rem",
+                }}
+              >
+                <div
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    border: "2px solid rgba(139,90,43,0.3)",
+                    borderTop: "2px solid #8B5A2B",
+                    borderRadius: "50%",
+                    animation: "spin 1s linear infinite",
+                  }}
+                />
+                <p style={{ color: "rgba(245,240,232,0.5)", fontSize: "0.85rem" }}>
+                  Generazione immagine in corso...
+                </p>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              </div>
+            ) : immagineGenerata ? (
+              <img
+                src={immagineGenerata}
+                alt="Rendering generato"
+                style={{
+                  width: "100%",
+                  borderRadius: "2px",
+                  border: "1px solid rgba(139,90,43,0.15)",
+                }}
+              />
+            ) : null}
+          </div>
+        )}
+
+        {/* Risposta AI testuale */}
         {risposta && (
           <div
             style={{
@@ -306,8 +369,9 @@ export default function ArredaPage() {
               Suggerimenti dell'AI
             </p>
             <div style={{ color: "#F5F0E8", fontSize: "0.95rem", lineHeight: "1.9" }}>
-  <ReactMarkdown>{risposta}</ReactMarkdown>
-</div>
+              <ReactMarkdown>{risposta}</ReactMarkdown>
+            </div>
+
             <div
               style={{
                 marginTop: "2rem",
