@@ -67,7 +67,7 @@ export default function PrezziPage() {
             Scegli il tuo <em style={{ color: "#8B5A2B" }}>piano</em>
           </h1>
           <p style={{ color: "rgba(92,61,30,0.6)", fontSize: "1rem", lineHeight: "1.7" }}>
-            Inizia gratis con una immagine di prova. Passa a Pro per immagini illimitate.
+            Inizia gratis con 3 immagini di prova. Passa a Pro per immagini illimitate.
           </p>
         </div>
 
@@ -83,7 +83,7 @@ export default function PrezziPage() {
             <div style={{ fontSize: "2.5rem", color: "#2C1A0E", marginBottom: "0.5rem", fontWeight: "300" }}>€0</div>
             <p style={{ fontSize: "0.85rem", color: "rgba(92,61,30,0.5)", marginBottom: "1.5rem" }}>per sempre</p>
             <div style={{ borderTop: "1px solid rgba(139,90,43,0.1)", paddingTop: "1.5rem", marginBottom: "1.5rem" }}>
-              {["1 immagine di prova", "Suggerimenti AI illimitati", "Accesso al marketplace", "Ricerca artigiani"].map((f) => (
+              {["3 immagini di prova", "Suggerimenti AI illimitati", "Accesso al marketplace", "Ricerca artigiani"].map((f) => (
                 <div key={f} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem", fontSize: "0.85rem", color: "#5C3D1E" }}>
                   <span style={{ color: "#8B5A2B" }}>✓</span> {f}
                 </div>
