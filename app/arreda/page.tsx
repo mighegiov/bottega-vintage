@@ -9,6 +9,13 @@ export default function ArredaPage() {
   const [loadingImmagine, setLoadingImmagine] = useState(false);
   const [risposta, setRisposta] = useState("");
   const [immagineGenerata, setImmagineGenerata] = useState<string | null>(null);
+  const [immaginiUsate, setImmaginiUsate] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return parseInt(localStorage.getItem("immagini_usate") || "0");
+    }
+    return 0;
+  });
+  const LIMITE_FREE = 3;
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,6 +28,10 @@ export default function ArredaPage() {
 
   const handleGenera = async () => {
     if (!prompt) return;
+    if (immaginiUsate >= LIMITE_FREE) {
+      window.location.href = "/prezzi";
+      return;
+    }
     setLoading(true);
     setLoadingImmagine(true);
     setRisposta("");
@@ -86,6 +97,9 @@ export default function ArredaPage() {
       const imgData = await imgResponse.json();
       if (imgData.imageUrl) {
         setImmagineGenerata(imgData.imageUrl);
+        const nuovoContatore = immaginiUsate + 1;
+        setImmaginiUsate(nuovoContatore);
+        localStorage.setItem("immagini_usate", nuovoContatore.toString());
       }
     } catch (err) {
       console.error("Errore generazione immagine:", err);
